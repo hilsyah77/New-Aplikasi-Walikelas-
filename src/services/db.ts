@@ -92,6 +92,7 @@ export class DatabaseService {
     };
 
     try {
+      // 1. Save to local IndexedDB for immediate responsiveness
       const db = await this.getDB();
       await new Promise<void>((resolve, reject) => {
         const transaction = db.transaction(STORE_CLASSES, 'readwrite');
@@ -102,10 +103,10 @@ export class DatabaseService {
         request.onerror = () => reject(request.error);
       });
 
-      // Save fallback in localStorage (lightweight copy)
+      // 2. Save fallback index in localStorage
       try {
-        const allClasses = await this.getAllClasses();
         localStorage.setItem('walikelas_active_class_id', data.summary.id);
+        const allClasses = await this.getAllClasses();
         const mini = allClasses.map(c => ({
           id: c.summary.id,
           className: c.summary.className,
@@ -117,15 +118,39 @@ export class DatabaseService {
         // ignore storage limits
       }
 
-      // Sync to Firebase Firestore in the background
+      // 3. Sync to Firebase Firestore cloud database
       if (syncToCloud) {
-        FirebaseDbService.saveClass(updatedData).catch((err) => {
-          console.warn('Background sync to Firestore skipped or failed:', err);
-        });
+        try {
+          await FirebaseDbService.saveClass(updatedData);
+        } catch (err) {
+          console.warn('Firestore cloud sync notice (saved locally in IndexedDB):', err);
+        }
       }
     } catch (e) {
-      console.error('Error saving to IndexedDB:', e);
+      console.error('Error saving to Database:', e);
       throw e;
+    }
+  }
+
+  public static async syncWithCloud(): Promise<FullClassData[]> {
+    try {
+      const cloudClasses = await FirebaseDbService.getAllClasses();
+      if (cloudClasses && cloudClasses.length > 0) {
+        const db = await this.getDB();
+        for (const cls of cloudClasses) {
+          await new Promise<void>((resolve, reject) => {
+            const transaction = db.transaction(STORE_CLASSES, 'readwrite');
+            const store = transaction.objectStore(STORE_CLASSES);
+            const request = store.put(cls);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+          });
+        }
+      }
+      return await this.getAllClasses();
+    } catch (e) {
+      console.warn('Cloud sync on startup fallback to local:', e);
+      return await this.getAllClasses();
     }
   }
 

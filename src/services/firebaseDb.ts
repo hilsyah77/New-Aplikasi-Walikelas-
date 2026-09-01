@@ -7,10 +7,7 @@ import {
   deleteDoc,
   onSnapshot,
   query,
-  where,
-  orderBy,
-  serverTimestamp,
-  Timestamp
+  where
 } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { db, auth } from '../firebase';
@@ -20,6 +17,28 @@ import { handleFirestoreError, OperationType } from './firestoreErrors';
 const CLASSES_COLLECTION = 'classes';
 const USERS_COLLECTION = 'users';
 
+/**
+ * Remove undefined values and clean data structure for Firestore
+ */
+function sanitizeForFirestore<T>(data: T): T {
+  if (data === null || data === undefined) {
+    return null as any;
+  }
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeForFirestore(item)) as any;
+  }
+  if (typeof data === 'object') {
+    const cleaned: any = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined) {
+        cleaned[key] = sanitizeForFirestore(value);
+      }
+    }
+    return cleaned;
+  }
+  return data;
+}
+
 export class FirebaseDbService {
   /**
    * Sync or save user profile to Firestore
@@ -27,18 +46,15 @@ export class FirebaseDbService {
   public static async saveUserProfile(user: User): Promise<void> {
     const path = `${USERS_COLLECTION}/${user.uid}`;
     try {
-      await setDoc(
-        doc(db, USERS_COLLECTION, user.uid),
-        {
-          userId: user.uid,
-          email: user.email || '',
-          displayName: user.displayName || '',
-          photoURL: user.photoURL || '',
-          updatedAt: new Date().toISOString(),
-          createdAt: new Date().toISOString()
-        },
-        { merge: true }
-      );
+      const data = sanitizeForFirestore({
+        userId: user.uid,
+        email: user.email || '',
+        displayName: user.displayName || '',
+        photoURL: user.photoURL || '',
+        updatedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString()
+      });
+      await setDoc(doc(db, USERS_COLLECTION, user.uid), data, { merge: true });
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, path);
     }
@@ -53,7 +69,7 @@ export class FirebaseDbService {
     const uid = userId || auth.currentUser?.uid || 'anonymous';
 
     try {
-      const payload = {
+      const payload = sanitizeForFirestore({
         id: classId,
         schoolName: classData.summary.schoolName || '',
         academicYear: classData.summary.academicYear || '',
@@ -74,11 +90,12 @@ export class FirebaseDbService {
         userId: uid,
         updatedAt: new Date().toISOString(),
         createdAt: classData.summary.createdAt || new Date().toISOString()
-      };
+      });
 
       await setDoc(doc(db, CLASSES_COLLECTION, classId), payload, { merge: true });
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, path);
+      throw error;
     }
   }
 
@@ -111,6 +128,7 @@ export class FirebaseDbService {
       return classes;
     } catch (error) {
       handleFirestoreError(error, OperationType.LIST, path);
+      return [];
     }
   }
 
@@ -123,6 +141,7 @@ export class FirebaseDbService {
       await deleteDoc(doc(db, CLASSES_COLLECTION, classId));
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, path);
+      throw error;
     }
   }
 
@@ -151,13 +170,16 @@ export class FirebaseDbService {
             });
           }
         });
-        onData(classes);
+        if (classes.length > 0) {
+          onData(classes);
+        }
       },
       (error) => {
-        handleFirestoreError(error, OperationType.GET, path);
+        console.warn('Firestore real-time subscription status:', error);
       }
     );
 
     return unsubscribe;
   }
 }
+

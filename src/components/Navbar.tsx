@@ -59,15 +59,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center gap-2 sm:gap-3">
             
             {/* Database Auto-Save Status */}
-            <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600">
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600">
               <Database className="w-3.5 h-3.5 text-blue-600" />
               {isSaving ? (
                 <span className="text-amber-600 font-medium animate-pulse flex items-center gap-1">
-                  <FolderSync className="w-3 h-3 animate-spin" /> Menyimpan...
+                  <FolderSync className="w-3 h-3 animate-spin" /> Menyimpan ke Database...
                 </span>
               ) : (
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 text-slate-700">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 inline" />
+                  <span className="hidden sm:inline">Database: </span>
                   {lastSavedTime ? `Tersimpan ${lastSavedTime}` : 'Tersimpan'}
                 </span>
               )}

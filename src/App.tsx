@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { FullClassData, ClassSummary, StudentEntry, DocumentProof, VerificationStatus } from './types';
 import { DatabaseService } from './services/db';
+import { FirebaseDbService } from './services/firebaseDb';
 import { Navbar } from './components/Navbar';
 import { ClassSummaryCard } from './components/ClassSummaryCard';
 import { StudentListSection } from './components/StudentListSection';
@@ -34,25 +35,23 @@ export default function App() {
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Initial load from IndexedDB
+  // Initial load from IndexedDB and Cloud Firestore
   const loadDatabase = useCallback(async () => {
     try {
       setIsLoading(true);
-      let classes = await DatabaseService.getAllClasses();
+      // 1. Sync & get classes from Local and Cloud
+      let classes = await DatabaseService.syncWithCloud();
       
       // Clean up legacy demo students (if any exist from earlier template)
-      let hasUpdatedLegacy = false;
       const demoNames = ['Muhammad Rizky Pratama', 'Aisyah Putri Azzahra', 'Dimas Aditya Saputra'];
       
       classes = await Promise.all(
         classes.map(async (cls) => {
           const filteredStudents = (cls.students || []).filter(s => !demoNames.includes(s.name));
           if (filteredStudents.length !== (cls.students || []).length) {
-            hasUpdatedLegacy = true;
             const updated = {
               ...cls,
               students: filteredStudents,
-              // If maleCount and femaleCount were default 16 from template, reset to 0
               summary: {
                 ...cls.summary,
                 maleCount: (cls.summary.maleCount === 16 && cls.summary.femaleCount === 16) ? 0 : cls.summary.maleCount,
@@ -79,6 +78,7 @@ export default function App() {
         const active = classes.find(c => c.summary.id === activeId) || classes[0];
         setCurrentClass(active);
       }
+      setLastSavedTime(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     } catch (e) {
       console.error('Error loading database:', e);
     } finally {
@@ -88,6 +88,41 @@ export default function App() {
 
   useEffect(() => {
     loadDatabase();
+
+    // Listen to real-time changes across sessions/tabs
+    const unsubscribe = FirebaseDbService.subscribeToClasses((cloudClasses) => {
+      if (cloudClasses && cloudClasses.length > 0) {
+        setAllClasses(prev => {
+          // Merge cloud updates
+          const merged = [...prev];
+          cloudClasses.forEach(c => {
+            const idx = merged.findIndex(m => m.summary.id === c.summary.id);
+            if (idx >= 0) {
+              // Update if different
+              if (new Date(c.summary.updatedAt).getTime() > new Date(merged[idx].summary.updatedAt).getTime()) {
+                merged[idx] = c;
+              }
+            } else {
+              merged.push(c);
+            }
+          });
+          return merged;
+        });
+
+        setCurrentClass(curr => {
+          if (!curr) return null;
+          const cloudCurrent = cloudClasses.find(c => c.summary.id === curr.summary.id);
+          if (cloudCurrent && new Date(cloudCurrent.summary.updatedAt).getTime() > new Date(curr.summary.updatedAt).getTime()) {
+            return cloudCurrent;
+          }
+          return curr;
+        });
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [loadDatabase]);
 
   const handleResetDatabase = async () => {

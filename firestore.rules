@@ -2,11 +2,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Global Deny All by Default
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
     function isValidId(id) {
       return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_-]+$');
     }
@@ -55,14 +50,14 @@ service cloud.firestore {
 
     // Users collection
     match /users/{userId} {
-      allow get, list: if isValidId(userId);
+      allow read: if true;
       allow create, update: if isValidId(userId) && isValidUserProfile(incoming());
       allow delete: if isValidId(userId);
     }
 
     // Classes collection
     match /classes/{classId} {
-      allow get, list: if isValidId(classId);
+      allow read: if true;
       allow create: if isValidId(classId) && isValidClassRecord(incoming());
       allow update: if isValidId(classId) && isValidClassRecord(incoming()) && incoming().id == existing().id;
       allow delete: if isValidId(classId);
@@ -74,3 +69,4 @@ service cloud.firestore {
     }
   }
 }
+
