@@ -1,0 +1,50 @@
+export const DEFAULT_SCHOOL_NAME = "MTs Asy-Syafi'iyyah Jatibarang";
+
+export const CLASS_OPTIONS = [
+  // Kelas 7 (7A - 7H)
+  '7A', '7B', '7C', '7D', '7E', '7F', '7G', '7H',
+  // Kelas 8 (8A - 8H)
+  '8A', '8B', '8C', '8D', '8E', '8F', '8G', '8H',
+  // Kelas 9 (9A - 9J)
+  '9A', '9B', '9C', '9D', '9E', '9F', '9G', '9H', '9I', '9J'
+];
+
+export const ACADEMIC_YEAR_OPTIONS = [
+  '2025/2026',
+  '2026/2027',
+  '2027/2028',
+  '2028/2029',
+  '2029/2030',
+  '2030/2031',
+  '2031/2032',
+  '2032/2033'
+];
+
+export const TEACHER_OPTIONS = [
+  'MUSTOFA',
+  'M. AZIZ HIMAWAN AKBAR',
+  'HARIYANTO',
+  'ANIS MASRUFATUN SAADAH',
+  'NUR KHIKMAH',
+  'AENI AFTHINA',
+  'AKHMAD SYAFI',
+  'AINI LUTFIYAH',
+  'ABDUR ROUF',
+  'RAGIL SUSYANTO',
+  'ENY ERLINA',
+  'AHMAD SYAMSUL FALAH',
+  'DETTY TURISHA WIGUNANTI',
+  'SILVIA TINDIYAH SUGIARTO',
+  'ETHIK RAHMAWATI',
+  'RR NUR AZIZAH',
+  'BAENY ABDUL FATAH',
+  'MOCHAMMAD AQIL MAHFUDZ',
+  'DEWI RACHMAWATI',
+  'ADE AYU NUR TANTRI',
+  'RIZQI YUNI ARSIH',
+  'ISMATUL MAULA',
+  'RETNO FAJAR INTAMI',
+  'NOPRIYANI',
+  'TUTI ALAWIYAH',
+  'AYU ROSALITA'
+];
