@@ -162,6 +162,7 @@ export const QuickBatchStudentModal: React.FC<QuickBatchStudentModalProps> = ({
                 Kategori Status Awal
               </label>
               <select
+                id="select-kategori-status-batch"
                 value={defaultStatus}
                 onChange={(e) => setDefaultStatus(e.target.value as StudentStatus)}
                 className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 font-medium cursor-pointer"
@@ -169,6 +170,8 @@ export const QuickBatchStudentModal: React.FC<QuickBatchStudentModalProps> = ({
                 <option value="Siswa Reguler">Siswa Reguler / Aktif</option>
                 <option value="Siswa Baru">Siswa Baru</option>
                 <option value="Siswa Pindahan (Masuk)">Siswa Pindahan (Masuk)</option>
+                <option value="Siswa Pindahan (Keluar)">Siswa Pindahan (Keluar / Mutasi)</option>
+                <option value="Siswa Keluar (Drop Out)">Siswa Keluar (Drop Out)</option>
               </select>
             </div>
           </div>

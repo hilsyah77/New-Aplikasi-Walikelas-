@@ -14,7 +14,8 @@ import {
   Sparkles,
   User,
   GraduationCap,
-  Filter
+  Filter,
+  ChevronDown
 } from 'lucide-react';
 import { StudentEntry, FullClassData } from '../types';
 import { CLASS_OPTIONS } from '../constants';
@@ -256,7 +257,7 @@ export const StudentListSection: React.FC<StudentListSectionProps> = ({
           <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-slate-300 shadow-2xs">
             <Filter className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
             <label htmlFor="select-status-menu-dropdown" className="text-xs font-bold text-slate-700">
-              Menu Status:
+              Kategori Status:
             </label>
             <select
               id="select-status-menu-dropdown"
@@ -264,7 +265,7 @@ export const StudentListSection: React.FC<StudentListSectionProps> = ({
               onChange={(e) => setStatusFilter(e.target.value)}
               className="text-xs font-bold text-slate-900 bg-transparent focus:outline-none cursor-pointer pr-1"
             >
-              <option value="all">Semua Status ({students.length})</option>
+              <option value="all">Semua Kategori Status ({students.length})</option>
               <option value="Siswa Reguler">Reguler / Aktif ({countReguler})</option>
               <option value="Siswa Baru">Siswa Baru ({countBaru})</option>
               <option value="Siswa Pindahan (Masuk)">Pindahan Masuk ({countPindahanMasuk})</option>
@@ -443,26 +444,48 @@ export const StudentListSection: React.FC<StudentListSectionProps> = ({
                       </span>
                     </td>
 
-                    {/* Status Siswa */}
+                    {/* Kategori Status Siswa Dropdown */}
                     <td className="py-3 px-4">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-xs font-semibold ${
-                        student.status === 'Siswa Baru'
-                          ? 'bg-blue-50 text-blue-800 border border-blue-200'
-                          : student.status === 'Siswa Pindahan (Masuk)'
-                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                          : student.status === 'Siswa Pindahan (Keluar)'
-                          ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                          : student.status === 'Siswa Keluar (Drop Out)'
-                          ? 'bg-rose-50 text-rose-800 border border-rose-200'
-                          : 'bg-slate-100 text-slate-700 border border-slate-200'
-                      }`}>
-                        {student.status === 'Siswa Baru' && <UserPlus className="w-3 h-3" />}
-                        {student.status === 'Siswa Pindahan (Masuk)' && <ArrowRightLeft className="w-3 h-3 text-emerald-600" />}
-                        {student.status === 'Siswa Pindahan (Keluar)' && <ArrowRightLeft className="w-3 h-3 text-amber-600" />}
-                        {student.status === 'Siswa Keluar (Drop Out)' && <UserMinus className="w-3 h-3 text-rose-600" />}
-                        {student.status === 'Siswa Reguler' && <UserCheck className="w-3 h-3 text-slate-600" />}
-                        <span>{student.status}</span>
-                      </span>
+                      <div className="relative inline-flex items-center">
+                        <select
+                          id={`select-status-student-${student.id}`}
+                          value={student.status}
+                          onChange={(e) => onEditStudent({
+                            ...student,
+                            status: e.target.value as any
+                          })}
+                          title="Pilih / Ubah Kategori Status Siswa"
+                          className={`appearance-none pl-7 pr-6 py-1 rounded-lg text-xs font-semibold cursor-pointer border transition-all shadow-2xs focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+                            student.status === 'Siswa Baru'
+                              ? 'bg-blue-50 text-blue-900 border-blue-200 hover:bg-blue-100/90 focus:ring-blue-400'
+                              : student.status === 'Siswa Pindahan (Masuk)'
+                              ? 'bg-emerald-50 text-emerald-900 border-emerald-200 hover:bg-emerald-100/90 focus:ring-emerald-400'
+                              : student.status === 'Siswa Pindahan (Keluar)'
+                              ? 'bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100/90 focus:ring-amber-400'
+                              : student.status === 'Siswa Keluar (Drop Out)'
+                              ? 'bg-rose-50 text-rose-900 border-rose-200 hover:bg-rose-100/90 focus:ring-rose-400'
+                              : 'bg-slate-100 text-slate-800 border-slate-300 hover:bg-slate-200/90 focus:ring-slate-400'
+                          }`}
+                        >
+                          <option value="Siswa Reguler">Siswa Reguler / Aktif</option>
+                          <option value="Siswa Baru">Siswa Baru</option>
+                          <option value="Siswa Pindahan (Masuk)">Siswa Pindahan (Masuk)</option>
+                          <option value="Siswa Pindahan (Keluar)">Siswa Pindahan (Keluar / Mutasi)</option>
+                          <option value="Siswa Keluar (Drop Out)">Siswa Keluar (Drop Out)</option>
+                        </select>
+
+                        {/* Leading Icon */}
+                        <div className="absolute left-2 pointer-events-none">
+                          {student.status === 'Siswa Baru' && <UserPlus className="w-3.5 h-3.5 text-blue-700" />}
+                          {student.status === 'Siswa Pindahan (Masuk)' && <ArrowRightLeft className="w-3.5 h-3.5 text-emerald-700" />}
+                          {student.status === 'Siswa Pindahan (Keluar)' && <ArrowRightLeft className="w-3.5 h-3.5 text-amber-700" />}
+                          {student.status === 'Siswa Keluar (Drop Out)' && <UserMinus className="w-3.5 h-3.5 text-rose-700" />}
+                          {student.status === 'Siswa Reguler' && <UserCheck className="w-3.5 h-3.5 text-slate-700" />}
+                        </div>
+
+                        {/* Dropdown Chevron */}
+                        <ChevronDown className="w-3 h-3 text-slate-500 absolute right-1.5 pointer-events-none" />
+                      </div>
                     </td>
 
                     {/* Kelas */}
