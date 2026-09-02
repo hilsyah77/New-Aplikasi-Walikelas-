@@ -21,6 +21,7 @@ import { StatementSignatureSection } from './components/StatementSignatureSectio
 import { ExportSection } from './components/ExportSection';
 import { BackupModal } from './components/BackupModal';
 import { DuplicateWarningModal } from './components/DuplicateWarningModal';
+import { DeleteDatabaseModal } from './components/DeleteDatabaseModal';
 
 export default function App() {
   const [allClasses, setAllClasses] = useState<FullClassData[]>([]);
@@ -34,6 +35,7 @@ export default function App() {
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<StudentEntry | null>(null);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
+  const [isDeleteDbOpen, setIsDeleteDbOpen] = useState(false);
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -354,6 +356,7 @@ export default function App() {
         onSelectClass={handleSelectClass}
         onNewClass={handleNewClass}
         onOpenBackup={() => setIsBackupModalOpen(true)}
+        onOpenDeleteDatabase={() => setIsDeleteDbOpen(true)}
         lastSavedTime={lastSavedTime}
         isSaving={isSaving}
       />
@@ -434,6 +437,7 @@ export default function App() {
             onSelectClass={handleSelectClass}
             onDeleteClass={handleDeleteClass}
             onNewClass={handleNewClass}
+            onOpenDeleteDatabase={() => setIsDeleteDbOpen(true)}
           />
         </section>
 
@@ -441,8 +445,14 @@ export default function App() {
         <section id="section-students">
           <StudentListSection
             students={currentClass.students}
-            className={currentClass.summary.className || '-'}
+            className={currentClass.summary.className || ''}
             teacherName={currentClass.summary.teacherName}
+            allClasses={allClasses}
+            activeClassId={currentClass.summary.id}
+            onSelectClass={handleSelectClass}
+            onUpdateClassName={(newClassName) => {
+              handleUpdateSummary({ className: newClassName });
+            }}
             onAddStudent={() => {
               setEditingStudent(null);
               setIsStudentModalOpen(true);
@@ -516,6 +526,14 @@ export default function App() {
         onDeleteClass={handleDeleteClass}
         onRefreshData={loadDatabase}
         onResetDatabase={handleResetDatabase}
+        onOpenDeleteDatabase={() => setIsDeleteDbOpen(true)}
+      />
+
+      <DeleteDatabaseModal
+        isOpen={isDeleteDbOpen}
+        allClasses={allClasses}
+        onConfirmDelete={handleResetDatabase}
+        onClose={() => setIsDeleteDbOpen(false)}
       />
 
       <DuplicateWarningModal

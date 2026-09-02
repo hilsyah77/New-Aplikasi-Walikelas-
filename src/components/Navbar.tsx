@@ -5,7 +5,8 @@ import {
   BookOpen, 
   CheckCircle2,
   FolderSync,
-  Cloud
+  Cloud,
+  Trash2
 } from 'lucide-react';
 import { FullClassData } from '../types';
 
@@ -15,6 +16,7 @@ interface NavbarProps {
   onSelectClass: (id: string) => void;
   onNewClass?: () => void;
   onOpenBackup: () => void;
+  onOpenDeleteDatabase?: () => void;
   lastSavedTime: string | null;
   isSaving: boolean;
 }
@@ -24,6 +26,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   allClasses,
   onSelectClass,
   onOpenBackup,
+  onOpenDeleteDatabase,
   lastSavedTime,
   isSaving
 }) => {
@@ -102,6 +105,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Database className="w-3.5 h-3.5 text-slate-600" />
               <span className="hidden sm:inline">Basis Data</span>
             </button>
+
+            {/* Hapus Database Button */}
+            {onOpenDeleteDatabase && (
+              <button
+                id="btn-navbar-delete-database"
+                type="button"
+                onClick={onOpenDeleteDatabase}
+                title="Hapus / Reset Seluruh Basis Data"
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100/80 border border-rose-200 rounded-xl shadow-2xs transition-colors cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                <span className="hidden sm:inline">Hapus Database</span>
+              </button>
+            )}
 
           </div>
         </div>

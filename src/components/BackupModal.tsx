@@ -31,6 +31,7 @@ interface BackupModalProps {
   onDeleteClass: (id: string) => void;
   onRefreshData: () => Promise<void>;
   onResetDatabase?: () => Promise<void>;
+  onOpenDeleteDatabase?: () => void;
 }
 
 export const BackupModal: React.FC<BackupModalProps> = ({
@@ -42,7 +43,8 @@ export const BackupModal: React.FC<BackupModalProps> = ({
   onNewClass,
   onDeleteClass,
   onRefreshData,
-  onResetDatabase
+  onResetDatabase,
+  onOpenDeleteDatabase
 }) => {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -348,7 +350,20 @@ export const BackupModal: React.FC<BackupModalProps> = ({
 
         {/* Footer */}
         <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-          {onResetDatabase ? (
+          {onOpenDeleteDatabase ? (
+            <button
+              id="btn-modal-open-delete-database"
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenDeleteDatabase();
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-700 hover:text-rose-800 hover:bg-rose-100/70 bg-rose-50 border border-rose-300 rounded-lg transition-colors cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+              Hapus Seluruh Database
+            </button>
+          ) : onResetDatabase ? (
             <button
               type="button"
               onClick={async () => {
@@ -357,10 +372,10 @@ export const BackupModal: React.FC<BackupModalProps> = ({
                   onClose();
                 }
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 rounded-lg transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-700 hover:text-rose-800 hover:bg-rose-100/70 bg-rose-50 border border-rose-300 rounded-lg transition-colors cursor-pointer"
             >
-              <Trash2 className="w-3.5 h-3.5" />
-              Kosongkan / Bersihkan Data
+              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+              Hapus Seluruh Database
             </button>
           ) : (
             <div />

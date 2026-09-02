@@ -12,15 +12,22 @@ import {
   ArrowRightLeft, 
   UserMinus,
   Sparkles,
-  User
+  User,
+  GraduationCap,
+  Filter
 } from 'lucide-react';
-import { StudentEntry } from '../types';
+import { StudentEntry, FullClassData } from '../types';
+import { CLASS_OPTIONS } from '../constants';
 import { QuickBatchStudentModal } from './QuickBatchStudentModal';
 
 interface StudentListSectionProps {
   students: StudentEntry[];
   className: string;
   teacherName?: string;
+  allClasses?: FullClassData[];
+  activeClassId?: string;
+  onSelectClass?: (classId: string) => void;
+  onUpdateClassName?: (newClassName: string) => void;
   onAddStudent: () => void;
   onAddBatchStudents: (newStudents: StudentEntry[]) => void;
   onEditStudent: (student: StudentEntry) => void;
@@ -34,6 +41,10 @@ export const StudentListSection: React.FC<StudentListSectionProps> = ({
   students,
   className,
   teacherName,
+  allClasses,
+  activeClassId,
+  onSelectClass,
+  onUpdateClassName,
   onAddStudent,
   onAddBatchStudents,
   onEditStudent,
@@ -74,6 +85,35 @@ export const StudentListSection: React.FC<StudentListSectionProps> = ({
 
   const isCountsDiffer = (maleInList !== summaryMaleCount || femaleInList !== summaryFemaleCount) && students.length > 0;
 
+  const handleClassChange = (selectedValue: string) => {
+    if (!selectedValue) {
+      if (onUpdateClassName) onUpdateClassName('');
+      return;
+    }
+
+    if (selectedValue.startsWith('saved:')) {
+      const targetId = selectedValue.replace('saved:', '');
+      if (onSelectClass) onSelectClass(targetId);
+      return;
+    }
+
+    // Check if class with this name already exists in database
+    const matchingSaved = allClasses?.find(
+      c => c.summary.className && c.summary.className.trim().toUpperCase() === selectedValue.trim().toUpperCase()
+    );
+
+    if (matchingSaved && matchingSaved.summary.id !== activeClassId) {
+      if (onSelectClass) {
+        onSelectClass(matchingSaved.summary.id);
+        return;
+      }
+    }
+
+    if (onUpdateClassName) {
+      onUpdateClassName(selectedValue);
+    }
+  };
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
       
@@ -84,19 +124,80 @@ export const StudentListSection: React.FC<StudentListSectionProps> = ({
             <Users className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
                 Daftar Nama Siswa per Kelas
               </h2>
-              <span className="px-2.5 py-0.5 rounded-lg text-xs font-extrabold bg-blue-100 text-blue-800 border border-blue-200">
-                {className ? `Kelas ${className}` : 'Pilih Kelas'}
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                <User className="w-3.5 h-3.5 text-indigo-600" />
+
+              {/* Pilihan Kelas Dropdown Menu */}
+              <div className="flex items-center gap-1.5 bg-blue-50/90 px-2.5 py-1 rounded-xl border border-blue-200 shadow-2xs">
+                <GraduationCap className="w-4 h-4 text-blue-700 shrink-0" />
+                <label htmlFor="select-class-roster-menu" className="text-xs font-bold text-blue-900 hidden sm:inline">
+                  Pilihan Kelas:
+                </label>
+                <select
+                  id="select-class-roster-menu"
+                  value={className || ''}
+                  onChange={(e) => handleClassChange(e.target.value)}
+                  className="px-2.5 py-0.5 text-xs font-extrabold text-blue-900 bg-white border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer shadow-2xs transition-all"
+                >
+                  <option value="">-- Pilih Kelas --</option>
+                  {allClasses && allClasses.length > 0 && (
+                    <optgroup label="Kelas Tersimpan di Database">
+                      {allClasses.map((cls) => (
+                        <option 
+                          key={cls.summary.id} 
+                          value={cls.summary.className || `saved:${cls.summary.id}`}
+                        >
+                          {cls.summary.className ? `Kelas ${cls.summary.className}` : 'Pilih Kelas'} ({cls.students?.length || 0} Siswa){cls.summary.teacherName ? ` - ${cls.summary.teacherName}` : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  <optgroup label="Kelas 7 (7A - 7H)">
+                    {CLASS_OPTIONS.filter(c => c.startsWith('7')).map(cls => (
+                      <option key={cls} value={cls}>Kelas {cls}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Kelas 8 (8A - 8H)">
+                    {CLASS_OPTIONS.filter(c => c.startsWith('8')).map(cls => (
+                      <option key={cls} value={cls}>Kelas {cls}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Kelas 9 (9A - 9J)">
+                    {CLASS_OPTIONS.filter(c => c.startsWith('9')).map(cls => (
+                      <option key={cls} value={cls}>Kelas {cls}</option>
+                    ))}
+                  </optgroup>
+                </select>
+              </div>
+
+              {/* Status Menu Dropdown: Menampilkan Status Kelas Terpilih */}
+              {className ? (
+                <span 
+                  id="badge-status-class-roster"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Status: <strong className="font-extrabold text-emerald-900">Kelas {className} Terpilih</strong></span>
+                </span>
+              ) : (
+                <span 
+                  id="badge-status-class-roster"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300 shadow-2xs"
+                >
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                  <span>Status: <strong className="font-extrabold text-amber-900">Pilih Kelas Terlebih Dahulu</strong></span>
+                </span>
+              )}
+
+              {/* Wali Kelas Badge */}
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                <User className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                 <span>Wali Kelas: <strong className="text-slate-900 font-bold">{teacherName || 'Pilih Wali Kelas'}</strong></span>
               </span>
             </div>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 mt-1">
               Roster lengkap seluruh nama siswa dalam rombongan belajar kelas, mencakup siswa reguler, baru, mutasi, dan DO
             </p>
           </div>
@@ -148,80 +249,104 @@ export const StudentListSection: React.FC<StudentListSectionProps> = ({
         </div>
       )}
 
-      {/* Filter Tabs */}
+      {/* Filter Tabs & Status Menu Dropdown */}
       <div className="px-5 py-3 bg-slate-50 border-b border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold">
-          <button
-            type="button"
-            onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              statusFilter === 'all'
-                ? 'bg-white text-slate-900 shadow-2xs border border-slate-200 font-bold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Semua ({students.length})
-          </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Status Menu Dropdown */}
+          <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-slate-300 shadow-2xs">
+            <Filter className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+            <label htmlFor="select-status-menu-dropdown" className="text-xs font-bold text-slate-700">
+              Menu Status:
+            </label>
+            <select
+              id="select-status-menu-dropdown"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="text-xs font-bold text-slate-900 bg-transparent focus:outline-none cursor-pointer pr-1"
+            >
+              <option value="all">Semua Status ({students.length})</option>
+              <option value="Siswa Reguler">Reguler / Aktif ({countReguler})</option>
+              <option value="Siswa Baru">Siswa Baru ({countBaru})</option>
+              <option value="Siswa Pindahan (Masuk)">Pindahan Masuk ({countPindahanMasuk})</option>
+              <option value="Siswa Pindahan (Keluar)">Mutasi Keluar ({countPindahanKeluar})</option>
+              <option value="Siswa Keluar (Drop Out)">Drop Out ({countDropOut})</option>
+            </select>
+          </div>
 
-          <button
-            type="button"
-            onClick={() => setStatusFilter('Siswa Reguler')}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              statusFilter === 'Siswa Reguler'
-                ? 'bg-slate-800 text-white shadow-2xs font-bold'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Reguler / Aktif ({countReguler})
-          </button>
+          {/* Quick Status Buttons */}
+          <div className="hidden lg:flex flex-wrap items-center gap-1 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setStatusFilter('all')}
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                statusFilter === 'all'
+                  ? 'bg-slate-900 text-white shadow-2xs font-bold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Semua ({students.length})
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setStatusFilter('Siswa Baru')}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              statusFilter === 'Siswa Baru'
-                ? 'bg-blue-600 text-white shadow-2xs font-bold'
-                : 'text-slate-600 hover:text-blue-700'
-            }`}
-          >
-            Siswa Baru ({countBaru})
-          </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('Siswa Reguler')}
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                statusFilter === 'Siswa Reguler'
+                  ? 'bg-slate-800 text-white shadow-2xs font-bold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Reguler ({countReguler})
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setStatusFilter('Siswa Pindahan (Masuk)')}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              statusFilter === 'Siswa Pindahan (Masuk)'
-                ? 'bg-emerald-600 text-white shadow-2xs font-bold'
-                : 'text-slate-600 hover:text-emerald-700'
-            }`}
-          >
-            Pindahan Masuk ({countPindahanMasuk})
-          </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('Siswa Baru')}
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                statusFilter === 'Siswa Baru'
+                  ? 'bg-blue-600 text-white shadow-2xs font-bold'
+                  : 'text-slate-600 hover:text-blue-700'
+              }`}
+            >
+              Baru ({countBaru})
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setStatusFilter('Siswa Pindahan (Keluar)')}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              statusFilter === 'Siswa Pindahan (Keluar)'
-                ? 'bg-amber-600 text-white shadow-2xs font-bold'
-                : 'text-slate-600 hover:text-amber-700'
-            }`}
-          >
-            Mutasi Keluar ({countPindahanKeluar})
-          </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('Siswa Pindahan (Masuk)')}
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                statusFilter === 'Siswa Pindahan (Masuk)'
+                  ? 'bg-emerald-600 text-white shadow-2xs font-bold'
+                  : 'text-slate-600 hover:text-emerald-700'
+              }`}
+            >
+              Masuk ({countPindahanMasuk})
+            </button>
 
-          <button
-            type="button"
-            onClick={() => setStatusFilter('Siswa Keluar (Drop Out)')}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              statusFilter === 'Siswa Keluar (Drop Out)'
-                ? 'bg-rose-600 text-white shadow-2xs font-bold'
-                : 'text-slate-600 hover:text-rose-700'
-            }`}
-          >
-            Drop Out ({countDropOut})
-          </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('Siswa Pindahan (Keluar)')}
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                statusFilter === 'Siswa Pindahan (Keluar)'
+                  ? 'bg-amber-600 text-white shadow-2xs font-bold'
+                  : 'text-slate-600 hover:text-amber-700'
+              }`}
+            >
+              Keluar ({countPindahanKeluar})
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setStatusFilter('Siswa Keluar (Drop Out)')}
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                statusFilter === 'Siswa Keluar (Drop Out)'
+                  ? 'bg-rose-600 text-white shadow-2xs font-bold'
+                  : 'text-slate-600 hover:text-rose-700'
+              }`}
+            >
+              DO ({countDropOut})
+            </button>
+          </div>
         </div>
 
         {/* Gender Filter pills */}

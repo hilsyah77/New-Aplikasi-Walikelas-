@@ -24,13 +24,15 @@ interface SavedRombelSectionProps {
   currentClassId: string;
   onSelectClass: (id: string) => void;
   onDeleteClass: (id: string) => void;
+  onOpenDeleteDatabase?: () => void;
 }
 
 export const SavedRombelSection: React.FC<SavedRombelSectionProps> = ({
   savedClasses,
   currentClassId,
   onSelectClass,
-  onDeleteClass
+  onDeleteClass,
+  onOpenDeleteDatabase
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -71,11 +73,24 @@ export const SavedRombelSection: React.FC<SavedRombelSectionProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
             {savedClasses.length} Rombel Tersimpan
           </span>
+
+          {onOpenDeleteDatabase && (
+            <button
+              id="btn-delete-database-saved-rombel"
+              type="button"
+              onClick={onOpenDeleteDatabase}
+              title="Hapus Seluruh Basis Data"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-400/30 transition-colors cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <span>Hapus Database</span>
+            </button>
+          )}
         </div>
       </div>
 
