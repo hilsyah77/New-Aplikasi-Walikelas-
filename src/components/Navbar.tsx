@@ -85,7 +85,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 {allClasses.map((cls) => (
                   <option key={cls.summary.id} value={cls.summary.id}>
-                    Kelas {cls.summary.className || '-'} ({cls.summary.academicYear}){cls.summary.teacherName ? ` - ${cls.summary.teacherName}` : ''}
+                    {cls.summary.className ? `Kelas ${cls.summary.className}` : 'Pilih Kelas'} ({cls.summary.academicYear}){cls.summary.teacherName ? ` - ${cls.summary.teacherName}` : ' - Pilih Wali Kelas'}
                   </option>
                 ))}
               </select>

@@ -139,7 +139,7 @@ export const SavedRombelSection: React.FC<SavedRombelSectionProps> = ({
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2">
                         <span className="font-extrabold text-slate-900 text-sm sm:text-base px-2.5 py-0.5 rounded-lg bg-indigo-100 text-indigo-900 border border-indigo-200">
-                          Kelas {item.summary.className || '-'}
+                          {item.summary.className ? `Kelas ${item.summary.className}` : 'Pilih Kelas'}
                         </span>
                         {isCurrent && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
@@ -158,7 +158,7 @@ export const SavedRombelSection: React.FC<SavedRombelSectionProps> = ({
                     <td className="py-3.5 px-4">
                       <div className="font-bold text-slate-900 flex items-center gap-1.5">
                         <User className="w-3.5 h-3.5 text-indigo-600" />
-                        {item.summary.teacherName || 'Wali Kelas'}
+                        {item.summary.teacherName || 'Pilih Wali Kelas'}
                       </div>
                       <div className="text-[11px] text-slate-500">
                         {item.summary.teacherNip ? `NIP. ${item.summary.teacherNip}` : (item.summary.schoolName || 'Satuan Pendidikan')}

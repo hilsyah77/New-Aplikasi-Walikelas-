@@ -184,7 +184,7 @@ export class DatabaseService {
 
   public static async clearAllData(): Promise<void> {
     const db = await this.getDB();
-    return new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       const transaction = db.transaction(STORE_CLASSES, 'readwrite');
       const store = transaction.objectStore(STORE_CLASSES);
       const request = store.clear();
@@ -192,10 +192,21 @@ export class DatabaseService {
       request.onsuccess = () => {
         localStorage.removeItem('walikelas_active_class_id');
         localStorage.removeItem('walikelas_classes_index');
+        localStorage.removeItem('walikelas_classes_fallback');
         resolve();
       };
       request.onerror = () => reject(request.error);
     });
+
+    // Clear cloud Firestore database records
+    try {
+      const cloudClasses = await FirebaseDbService.getAllClasses();
+      for (const cls of cloudClasses) {
+        await FirebaseDbService.deleteClass(cls.summary.id);
+      }
+    } catch (err) {
+      console.warn('Wipe cloud database notice:', err);
+    }
   }
 
   public static createDefaultClass(): FullClassData {
@@ -207,8 +218,8 @@ export class DatabaseService {
       schoolName: DEFAULT_SCHOOL_NAME,
       academicYear: '2025/2026',
       semester: 'Ganjil',
-      className: '7A',
-      teacherName: 'MUSTOFA',
+      className: '',
+      teacherName: '',
       maleCount: 0,
       femaleCount: 0,
       statementPlace: 'Jatibarang',

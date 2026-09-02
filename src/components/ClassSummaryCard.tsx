@@ -80,12 +80,17 @@ export const ClassSummaryCard: React.FC<ClassSummaryCardProps> = ({
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
               <h2 className="text-base sm:text-lg font-bold tracking-tight">
-                Rekapitulasi Kelas {summary.className || '-'}
+                {summary.className ? `Rekapitulasi Kelas ${summary.className}` : 'Rekapitulasi (Pilih Kelas)'}
               </h2>
-              {summary.teacherName && (
+              {summary.teacherName ? (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-indigo-500/20 text-indigo-200 border border-indigo-400/30">
                   <User className="w-3.5 h-3.5 text-indigo-300" />
                   <span>Wali Kelas: <strong className="text-white font-bold">{summary.teacherName}</strong></span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-slate-800/80 text-amber-300 border border-amber-500/30">
+                  <User className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Wali Kelas: <strong className="font-bold">Pilih Wali Kelas</strong></span>
                 </span>
               )}
             </div>
@@ -167,10 +172,11 @@ export const ClassSummaryCard: React.FC<ClassSummaryCardProps> = ({
             </label>
             <select
               id="select-class-name"
-              value={summary.className}
+              value={summary.className || ''}
               onChange={(e) => onChange({ className: e.target.value })}
               className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 font-bold text-slate-800 transition-all cursor-pointer"
             >
+              <option value="">-- Pilih Kelas --</option>
               <optgroup label="Kelas 7 (7A - 7H)">
                 {CLASS_OPTIONS.filter(c => c.startsWith('7')).map(cls => (
                   <option key={cls} value={cls}>Kelas {cls}</option>
@@ -237,7 +243,7 @@ export const ClassSummaryCard: React.FC<ClassSummaryCardProps> = ({
             </label>
             <select
               id="select-teacher-name"
-              value={summary.teacherName}
+              value={summary.teacherName || ''}
               onChange={(e) => onChange({ teacherName: e.target.value })}
               className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 font-bold text-slate-800 transition-all cursor-pointer"
             >

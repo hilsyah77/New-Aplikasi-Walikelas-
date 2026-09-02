@@ -44,31 +44,26 @@ export default function App() {
       // 1. Sync & get classes from Local and Cloud
       let classes = await DatabaseService.syncWithCloud();
       
-      // Clean up legacy demo students (if any exist from earlier template)
+      // Clean up legacy demo records and demo classes
       const demoNames = ['Muhammad Rizky Pratama', 'Aisyah Putri Azzahra', 'Dimas Aditya Saputra'];
       
-      classes = await Promise.all(
-        classes.map(async (cls) => {
-          const filteredStudents = (cls.students || []).filter(s => !demoNames.includes(s.name));
-          if (filteredStudents.length !== (cls.students || []).length) {
-            const updated = {
-              ...cls,
-              students: filteredStudents,
-              summary: {
-                ...cls.summary,
-                maleCount: (cls.summary.maleCount === 16 && cls.summary.femaleCount === 16) ? 0 : cls.summary.maleCount,
-                femaleCount: (cls.summary.maleCount === 16 && cls.summary.femaleCount === 16) ? 0 : cls.summary.femaleCount,
-              }
-            };
-            await DatabaseService.saveClass(updated);
-            return updated;
-          }
-          return cls;
-        })
-      );
+      // Check if a class is an old demo class (e.g. old default 7A MUSTOFA with no real user data, or containing demo students)
+      const isDemoClass = (cls: FullClassData) => {
+        const hasDemoStudents = (cls.students || []).some(s => demoNames.includes(s.name));
+        const isOldDefaultDemo = (cls.summary.className === '7A' && cls.summary.teacherName === 'MUSTOFA' && (cls.students || []).length === 0);
+        return hasDemoStudents || isOldDefaultDemo;
+      };
+
+      for (const cls of classes) {
+        if (isDemoClass(cls)) {
+          await DatabaseService.deleteClass(cls.summary.id);
+        }
+      }
+
+      classes = classes.filter(cls => !isDemoClass(cls));
 
       if (classes.length === 0) {
-        // Create clean initial class
+        // Create clean initial class without demo data
         const defaultClass = DatabaseService.createDefaultClass();
         await DatabaseService.saveClass(defaultClass);
         setAllClasses([defaultClass]);
@@ -241,19 +236,11 @@ export default function App() {
   };
 
   const handleNewClass = async () => {
-    // Generate distinct next class name
-    const existingClasses = allClasses.map(c => c.summary.className.trim().toLowerCase());
-    let nextNum = allClasses.length + 1;
-    let candidateName = 'Kelas ' + nextNum;
-    while (existingClasses.includes(candidateName.toLowerCase())) {
-      nextNum++;
-      candidateName = 'Kelas ' + nextNum;
-    }
-
     const defaultClass = DatabaseService.createDefaultClass();
     defaultClass.summary.id = 'class_' + Date.now();
-    defaultClass.summary.className = candidateName;
-    defaultClass.summary.primaryKey = getClassPrimaryKey(candidateName);
+    defaultClass.summary.className = '';
+    defaultClass.summary.teacherName = '';
+    defaultClass.summary.primaryKey = '';
     defaultClass.summary.maleCount = 0;
     defaultClass.summary.femaleCount = 0;
     defaultClass.summary.signatureDataUrl = '';
@@ -387,7 +374,7 @@ export default function App() {
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3.5 mt-1">
                 <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
-                  Rekapitulasi Kelas {currentClass.summary.className || 'Rombel'}
+                  {currentClass.summary.className ? `Rekapitulasi Kelas ${currentClass.summary.className}` : 'Rekapitulasi (Pilih Kelas)'}
                 </h1>
                 <div 
                   id="badge-header-walikelas"
@@ -396,7 +383,7 @@ export default function App() {
                   <UserCheck className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span className="text-slate-400 font-medium">Wali Kelas:</span>
                   <strong className="text-white font-bold tracking-wide">
-                    {currentClass.summary.teacherName || 'Belum Ditentukan'}
+                    {currentClass.summary.teacherName || 'Pilih Wali Kelas'}
                   </strong>
                   {currentClass.summary.nip && (
                     <span className="text-slate-400 text-xs font-normal hidden md:inline">• NIP. {currentClass.summary.nip}</span>

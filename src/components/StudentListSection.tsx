@@ -89,14 +89,12 @@ export const StudentListSection: React.FC<StudentListSectionProps> = ({
                 Daftar Nama Siswa per Kelas
               </h2>
               <span className="px-2.5 py-0.5 rounded-lg text-xs font-extrabold bg-blue-100 text-blue-800 border border-blue-200">
-                Kelas {className || '-'}
+                {className ? `Kelas ${className}` : 'Pilih Kelas'}
               </span>
-              {teacherName && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-                  <User className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Wali Kelas: <strong className="text-slate-900 font-bold">{teacherName}</strong></span>
-                </span>
-              )}
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                <User className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Wali Kelas: <strong className="text-slate-900 font-bold">{teacherName || 'Pilih Wali Kelas'}</strong></span>
+              </span>
             </div>
             <p className="text-xs text-slate-500">
               Roster lengkap seluruh nama siswa dalam rombongan belajar kelas, mencakup siswa reguler, baru, mutasi, dan DO
