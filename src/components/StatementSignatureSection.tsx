@@ -9,13 +9,15 @@ import {
   Download, 
   CheckCircle2, 
   AlertCircle,
+  AlertTriangle,
   PenTool,
   Eraser,
   Sparkles,
   Save,
-  Clock
+  Clock,
+  FolderOpen
 } from 'lucide-react';
-import { ClassSummary } from '../types';
+import { ClassSummary, FullClassData } from '../types';
 
 interface StatementSignatureSectionProps {
   summary: ClassSummary;
@@ -23,7 +25,9 @@ interface StatementSignatureSectionProps {
   onUpdateSummary: (updated: Partial<ClassSummary>) => void;
   onSaveRecord?: () => void;
   isSaving?: boolean;
-  totalUploadedDocuments?: number;
+  duplicateInfo?: FullClassData | null;
+  onLoadExistingClass?: (id: string) => void;
+  isSavedInDatabase?: boolean;
 }
 
 export const StatementSignatureSection: React.FC<StatementSignatureSectionProps> = ({
@@ -32,7 +36,9 @@ export const StatementSignatureSection: React.FC<StatementSignatureSectionProps>
   onUpdateSummary,
   onSaveRecord,
   isSaving = false,
-  totalUploadedDocuments = 0
+  duplicateInfo = null,
+  onLoadExistingClass,
+  isSavedInDatabase = false
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -197,11 +203,10 @@ export const StatementSignatureSection: React.FC<StatementSignatureSectionProps>
 
   // Validation requirements
   const hasStudentCounts = ((Number(summary.maleCount) || 0) + (Number(summary.femaleCount) || 0)) > 0 || totalStudents > 0;
-  const hasUploadedDocuments = (totalUploadedDocuments || 0) > 0;
   const hasDigitalSignature = Boolean(hasSignature || summary.signatureDataUrl);
 
-  const isReadyToSave = hasStudentCounts && hasUploadedDocuments && hasDigitalSignature;
-  const requirementsMetCount = (hasStudentCounts ? 1 : 0) + (hasUploadedDocuments ? 1 : 0) + (hasDigitalSignature ? 1 : 0);
+  const isReadyToSave = hasStudentCounts && hasDigitalSignature;
+  const requirementsMetCount = (hasStudentCounts ? 1 : 0) + (hasDigitalSignature ? 1 : 0);
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
@@ -253,7 +258,7 @@ export const StatementSignatureSection: React.FC<StatementSignatureSectionProps>
             <strong className="text-slate-900 font-bold">{summary.schoolName || '[Nama Sekolah]'}</strong>,{' '}
             menyatakan dengan sesungguhnya bahwa data rekapitulasi jumlah siswa sebanyak{' '}
             <strong className="text-blue-700 font-bold">{totalStudents} Siswa</strong> ({summary.maleCount} Laki-laki dan {summary.femaleCount} Perempuan),{' '}
-            serta data siswa baru/pindahan dan berkas bukti validasi terlampir adalah benar, sah, dan sesuai dengan keadaan administrasi kelas yang sebenarnya."
+            serta data siswa baru, pindahan, maupun mutasi adalah benar, sah, dan sesuai dengan keadaan administrasi kelas yang sebenarnya."
           </p>
 
           <div className="pt-2 flex items-center gap-2">
@@ -430,7 +435,7 @@ export const StatementSignatureSection: React.FC<StatementSignatureSectionProps>
             <div className="flex items-center gap-2">
               <span className={`w-2.5 h-2.5 rounded-full ${isReadyToSave ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
               <h4 className="text-xs font-bold text-slate-800">
-                Status Syarat Pengesahan & Penyimpanan Data ({requirementsMetCount}/3 Terpenuhi)
+                Status Syarat Pengesahan & Penyimpanan Data ({requirementsMetCount}/2 Terpenuhi)
               </h4>
             </div>
             <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
@@ -438,11 +443,11 @@ export const StatementSignatureSection: React.FC<StatementSignatureSectionProps>
                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' 
                 : 'bg-amber-100 text-amber-800 border border-amber-300'
             }`}>
-              {isReadyToSave ? 'Siap Disimpan (Tombol Aktif)' : 'Lengkapi 3 Syarat Wajib'}
+              {isReadyToSave ? 'Siap Disimpan (Tombol Aktif)' : 'Lengkapi 2 Syarat Wajib'}
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
             {/* Syarat 1: Input Jumlah Siswa */}
             <div className={`p-2.5 rounded-xl border flex items-center gap-2 ${
               hasStudentCounts 
@@ -462,26 +467,7 @@ export const StatementSignatureSection: React.FC<StatementSignatureSectionProps>
               </div>
             </div>
 
-            {/* Syarat 2: Upload Bukti Data Siswa */}
-            <div className={`p-2.5 rounded-xl border flex items-center gap-2 ${
-              hasUploadedDocuments 
-                ? 'bg-white border-emerald-200 text-emerald-900' 
-                : 'bg-white border-rose-200 text-rose-800'
-            }`}>
-              {hasUploadedDocuments ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              ) : (
-                <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="font-bold text-[11px] truncate">2. Bukti Data Valid</p>
-                <p className="text-[10px] text-slate-500">
-                  {hasUploadedDocuments ? `Terunggah: ${totalUploadedDocuments} Berkas` : 'Wajib Upload Berkas'}
-                </p>
-              </div>
-            </div>
-
-            {/* Syarat 3: Tanda Tangan Digital */}
+            {/* Syarat 2: Tanda Tangan Digital */}
             <div className={`p-2.5 rounded-xl border flex items-center gap-2 ${
               hasDigitalSignature 
                 ? 'bg-white border-emerald-200 text-emerald-900' 
@@ -493,7 +479,7 @@ export const StatementSignatureSection: React.FC<StatementSignatureSectionProps>
                 <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
               )}
               <div className="min-w-0 flex-1">
-                <p className="font-bold text-[11px] truncate">3. Tanda Tangan Digital</p>
+                <p className="font-bold text-[11px] truncate">2. Tanda Tangan Digital</p>
                 <p className="text-[10px] text-slate-500">
                   {hasDigitalSignature ? 'Sudah Ditandatangani' : 'Wajib Goreskan TTD'}
                 </p>
@@ -522,17 +508,48 @@ export const StatementSignatureSection: React.FC<StatementSignatureSectionProps>
           </div>
         )}
 
+        {/* Duplicate Class Alert Banner */}
+        {duplicateInfo && (
+          <div className="p-4 rounded-xl bg-amber-50 border-2 border-amber-300 text-amber-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-bold text-xs sm:text-sm text-amber-950">
+                  Info Data Ganda: Rombel Kelas {summary.className} Sudah Tersimpan
+                </h4>
+                <p className="text-xs text-amber-800 mt-0.5">
+                  Wali kelas <strong>{duplicateInfo.summary.teacherName || 'Wali Kelas'}</strong> telah menyimpan data kelas ini sebelumnya. Wali kelas hanya dapat mengisi <strong>sekali simpan</strong> per rombel.
+                </p>
+              </div>
+            </div>
+            {onLoadExistingClass && (
+              <button
+                type="button"
+                onClick={() => onLoadExistingClass(duplicateInfo.summary.id)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold text-xs shrink-0 cursor-pointer shadow-2xs"
+              >
+                <FolderOpen className="w-3.5 h-3.5" />
+                Buka Data Tersimpan
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Action Save Bar */}
         <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
           <div className="text-xs text-slate-500 max-w-md">
             <span className="font-bold text-slate-700">Petunjuk Penyimpanan:</span>{' '}
-            {!isReadyToSave ? (
+            {duplicateInfo ? (
+              <span className="text-amber-700 font-bold">
+                ⚠️ Info Data Ganda terdeteksi. Silakan buka data yang tersimpan atau pilih rombel lain.
+              </span>
+            ) : !isReadyToSave ? (
               <span className="text-rose-600 font-medium">
-                Tombol simpan saat ini non-aktif. Pastikan Jumlah Siswa telah diisi, Bukti Berkas telah diunggah, dan Tanda Tangan digital telah dibubuhkan.
+                Tombol simpan saat ini non-aktif. Pastikan Jumlah Siswa telah diisi dan Tanda Tangan digital telah dibubuhkan.
               </span>
             ) : (
               <span className="text-emerald-700 font-medium">
-                Semua syarat telah terpenuhi! Klik tombol di sebelah kanan untuk menyimpan data rekapitulasi ke riwayat.
+                Semua syarat telah terpenuhi! Klik tombol di sebelah kanan untuk menyimpan data rekapitulasi ke database.
               </span>
             )}
           </div>
@@ -544,13 +561,13 @@ export const StatementSignatureSection: React.FC<StatementSignatureSectionProps>
               setSaveSuccessMessage(null);
               setSaveErrorMessage(null);
 
-              if (!hasStudentCounts) {
-                setSaveErrorMessage('Input Jumlah Siswa (Laki-laki / Perempuan) wajib diisi terlebih dahulu!');
+              if (duplicateInfo) {
+                setSaveErrorMessage(`INFO DATA GANDA: Rombel Kelas ${summary.className} sudah pernah disimpan oleh ${duplicateInfo.summary.teacherName || 'Wali Kelas'}. Setiap kelas hanya bisa mengisi sekali simpan agar tidak terjadi tumpang tindih data.`);
                 return;
               }
 
-              if (!hasUploadedDocuments) {
-                setSaveErrorMessage('Upload Bukti Data Siswa Valid wajib diisi/diunggah minimal 1 berkas bukti!');
+              if (!hasStudentCounts) {
+                setSaveErrorMessage('Input Jumlah Siswa (Laki-laki / Perempuan) wajib diisi terlebih dahulu!');
                 return;
               }
 
@@ -576,22 +593,28 @@ export const StatementSignatureSection: React.FC<StatementSignatureSectionProps>
 
               if (onSaveRecord) {
                 onSaveRecord();
-                setSaveSuccessMessage(`Data rekapitulasi Kelas ${summary.className || ''} dan tanda tangan digital berhasil disimpan ke Riwayat!`);
+                setSaveSuccessMessage(`Data rekapitulasi Kelas ${summary.className || ''} dan tanda tangan digital berhasil disimpan ke Daftar Rombel Kelas Tersimpan!`);
               }
             }}
-            disabled={!isReadyToSave || isSaving}
+            disabled={(!isReadyToSave && !duplicateInfo) || isSaving}
             className={`inline-flex items-center gap-2 px-6 py-3 font-bold text-xs sm:text-sm rounded-xl transition-all ${
-              isReadyToSave && !isSaving
+              duplicateInfo
+                ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-md cursor-pointer'
+                : isReadyToSave && !isSaving
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transform active:scale-98 cursor-pointer'
                 : 'bg-slate-200 text-slate-400 border border-slate-300 shadow-none cursor-not-allowed'
             }`}
-            title={!isReadyToSave ? 'Lengkapi Jumlah Siswa, Upload Bukti, dan Tanda Tangan untuk mengaktifkan tombol' : 'Simpan data ke riwayat'}
+            title={duplicateInfo ? 'Data ganda terdeteksi' : !isReadyToSave ? 'Lengkapi Jumlah Siswa dan Tanda Tangan' : 'Simpan data ke database'}
           >
             <Save className="w-4 h-4" />
             {isSaving 
               ? 'Menyimpan...' 
-              : !isReadyToSave 
+              : duplicateInfo
+                ? 'Peringatan Data Ganda'
+                : !isReadyToSave 
                 ? 'Tombol Simpan Non-Aktif' 
+                : isSavedInDatabase
+                ? 'Perbarui Data Rekapitulasi'
                 : 'Simpan Data Rekapitulasi & Tanda Tangan'
             }
           </button>

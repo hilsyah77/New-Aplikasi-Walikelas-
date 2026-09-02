@@ -1,24 +1,26 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { 
   GraduationCap, 
   Database, 
   Sparkles,
   Info,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  UserCheck
 } from 'lucide-react';
-import { FullClassData, ClassSummary, StudentEntry, DocumentProof, VerificationStatus } from './types';
+import { FullClassData, ClassSummary, StudentEntry } from './types';
 import { DatabaseService } from './services/db';
 import { FirebaseDbService } from './services/firebaseDb';
+import { getClassPrimaryKey, findDuplicateSavedClass } from './utils/classHelper';
 import { Navbar } from './components/Navbar';
 import { ClassSummaryCard } from './components/ClassSummaryCard';
+import { SavedRombelSection } from './components/SavedRombelSection';
 import { StudentListSection } from './components/StudentListSection';
 import { StudentFormModal } from './components/StudentFormModal';
-import { DocumentUploadSection } from './components/DocumentUploadSection';
 import { StatementSignatureSection } from './components/StatementSignatureSection';
 import { ExportSection } from './components/ExportSection';
-import { DocumentPreviewModal } from './components/DocumentPreviewModal';
 import { BackupModal } from './components/BackupModal';
+import { DuplicateWarningModal } from './components/DuplicateWarningModal';
 
 export default function App() {
   const [allClasses, setAllClasses] = useState<FullClassData[]>([]);
@@ -26,11 +28,11 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState<FullClassData | null>(null);
 
   // Modals state
   const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<StudentEntry | null>(null);
-  const [previewDoc, setPreviewDoc] = useState<DocumentProof | null>(null);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -196,6 +198,26 @@ export default function App() {
     triggerAutoSave(newData);
   };
 
+  const handleSaveBatchStudents = (newStudents: StudentEntry[]) => {
+    if (!currentClass) return;
+    const combined = [...newStudents, ...currentClass.students];
+    const newData: FullClassData = {
+      ...currentClass,
+      students: combined
+    };
+    triggerAutoSave(newData);
+  };
+
+  const handleSyncCountsToSummary = () => {
+    if (!currentClass) return;
+    const m = currentClass.students.filter(s => s.gender === 'L').length;
+    const f = currentClass.students.filter(s => s.gender === 'P').length;
+    handleUpdateSummary({
+      maleCount: m,
+      femaleCount: f
+    });
+  };
+
   const handleDeleteStudent = (id: string) => {
     if (!currentClass) return;
     const std = currentClass.students.find(s => s.id === id);
@@ -209,79 +231,6 @@ export default function App() {
     }
   };
 
-  // Document management
-  const handleAddDocument = (doc: DocumentProof, targetStudentId?: string) => {
-    if (!currentClass) return;
-    if (targetStudentId) {
-      const updatedStudents = currentClass.students.map(s => {
-        if (s.id === targetStudentId) {
-          return {
-            ...s,
-            documents: [...(s.documents || []), doc]
-          };
-        }
-        return s;
-      });
-      triggerAutoSave({
-        ...currentClass,
-        students: updatedStudents
-      });
-    } else {
-      triggerAutoSave({
-        ...currentClass,
-        generalDocuments: [doc, ...(currentClass.generalDocuments || [])]
-      });
-    }
-  };
-
-  const handleDeleteDocument = (docId: string, studentId?: string) => {
-    if (!currentClass) return;
-    if (studentId) {
-      const updatedStudents = currentClass.students.map(s => {
-        if (s.id === studentId) {
-          return {
-            ...s,
-            documents: (s.documents || []).filter(d => d.id !== docId)
-          };
-        }
-        return s;
-      });
-      triggerAutoSave({
-        ...currentClass,
-        students: updatedStudents
-      });
-    } else {
-      triggerAutoSave({
-        ...currentClass,
-        generalDocuments: (currentClass.generalDocuments || []).filter(d => d.id !== docId)
-      });
-    }
-  };
-
-  const handleUpdateDocStatus = (docId: string, newStatus: VerificationStatus, studentId?: string) => {
-    if (!currentClass) return;
-    if (studentId) {
-      const updatedStudents = currentClass.students.map(s => {
-        if (s.id === studentId) {
-          return {
-            ...s,
-            documents: (s.documents || []).map(d => d.id === docId ? { ...d, status: newStatus } : d)
-          };
-        }
-        return s;
-      });
-      triggerAutoSave({
-        ...currentClass,
-        students: updatedStudents
-      });
-    } else {
-      triggerAutoSave({
-        ...currentClass,
-        generalDocuments: (currentClass.generalDocuments || []).map(d => d.id === docId ? { ...d, status: newStatus } : d)
-      });
-    }
-  };
-
   // Class selection & creation
   const handleSelectClass = async (id: string) => {
     const selected = allClasses.find(c => c.summary.id === id);
@@ -292,9 +241,19 @@ export default function App() {
   };
 
   const handleNewClass = async () => {
+    // Generate distinct next class name
+    const existingClasses = allClasses.map(c => c.summary.className.trim().toLowerCase());
+    let nextNum = allClasses.length + 1;
+    let candidateName = 'Kelas ' + nextNum;
+    while (existingClasses.includes(candidateName.toLowerCase())) {
+      nextNum++;
+      candidateName = 'Kelas ' + nextNum;
+    }
+
     const defaultClass = DatabaseService.createDefaultClass();
     defaultClass.summary.id = 'class_' + Date.now();
-    defaultClass.summary.className = 'Kelas Baru ' + (allClasses.length + 1);
+    defaultClass.summary.className = candidateName;
+    defaultClass.summary.primaryKey = getClassPrimaryKey(candidateName);
     defaultClass.summary.maleCount = 0;
     defaultClass.summary.femaleCount = 0;
     defaultClass.summary.signatureDataUrl = '';
@@ -322,14 +281,39 @@ export default function App() {
     }
   };
 
+  // Check for duplicate class in state
+  const duplicateSavedClass = useMemo(() => {
+    if (!currentClass) return null;
+    return findDuplicateSavedClass(
+      currentClass.summary.className,
+      allClasses,
+      currentClass.summary.id
+    );
+  }, [currentClass, allClasses]);
+
   const handleSaveRecord = async () => {
     if (!currentClass) return;
+
+    // Check if class name is already taken by another saved class in database
+    const duplicate = findDuplicateSavedClass(
+      currentClass.summary.className,
+      allClasses,
+      currentClass.summary.id
+    );
+
+    if (duplicate) {
+      setDuplicateWarning(duplicate);
+      return;
+    }
+
     setIsSaving(true);
     try {
+      const primaryKey = getClassPrimaryKey(currentClass.summary.className);
       const toSave: FullClassData = {
         ...currentClass,
         summary: {
           ...currentClass.summary,
+          primaryKey,
           updatedAt: new Date().toISOString(),
           signedAt: currentClass.summary.signedAt || new Date().toISOString()
         }
@@ -372,8 +356,6 @@ export default function App() {
   }
 
   const totalStudents = Number(currentClass.summary.maleCount) + Number(currentClass.summary.femaleCount);
-  const totalUploadedDocuments = (currentClass.generalDocuments?.length || 0) + 
-    currentClass.students.reduce((acc, s) => acc + (s.documents?.length || 0), 0);
 
   return (
     <div className="min-h-screen bg-slate-100/60 text-slate-900 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
@@ -403,9 +385,24 @@ export default function App() {
                   {currentClass.summary.schoolName || 'Satuan Pendidikan'}
                 </span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight mt-1">
-                Rekapitulasi Kelas {currentClass.summary.className || 'Rombel'}
-              </h1>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3.5 mt-1">
+                <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+                  Rekapitulasi Kelas {currentClass.summary.className || 'Rombel'}
+                </h1>
+                <div 
+                  id="badge-header-walikelas"
+                  className="inline-flex items-center gap-2 px-3 py-1 bg-slate-800/95 border border-slate-700/90 rounded-xl text-xs sm:text-sm font-semibold text-slate-200 shadow-2xs w-fit"
+                >
+                  <UserCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-slate-400 font-medium">Wali Kelas:</span>
+                  <strong className="text-white font-bold tracking-wide">
+                    {currentClass.summary.teacherName || 'Belum Ditentukan'}
+                  </strong>
+                  {currentClass.summary.nip && (
+                    <span className="text-slate-400 text-xs font-normal hidden md:inline">• NIP. {currentClass.summary.nip}</span>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Quick Metrics Header */}
@@ -430,45 +427,48 @@ export default function App() {
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8 flex-1 w-full">
         
-        {/* Section 1: Identitas & Input Jumlah Siswa (L, P, Auto-Sum) & Riwayat */}
+        {/* Section 1: Identitas Kelas & Rekapitulasi Jumlah Siswa */}
         <section id="section-summary">
           <ClassSummaryCard
             summary={currentClass.summary}
             students={currentClass.students}
             onChange={handleUpdateSummary}
-            historyList={allClasses.filter(c => Boolean(c.summary.signatureDataUrl))}
+            allSavedClasses={allClasses}
             currentClassId={currentClass.summary.id}
-            onSelectHistoryClass={handleSelectClass}
-            onDeleteHistoryClass={handleDeleteClass}
+            onSelectSavedClass={handleSelectClass}
           />
         </section>
 
-        {/* Section 2: Data Siswa Baru , Siswa Pindahan (Mutasi) & Siswa Keluar (Drop Out) */}
+        {/* Section 2: Daftar Rombel Kelas Tersimpan (di bawah Identitas & Rekapitulasi) */}
+        <section id="section-saved-rombel">
+          <SavedRombelSection
+            savedClasses={allClasses}
+            currentClassId={currentClass.summary.id}
+            onSelectClass={handleSelectClass}
+            onDeleteClass={handleDeleteClass}
+            onNewClass={handleNewClass}
+          />
+        </section>
+
+        {/* Section 3: Daftar Nama Siswa per Kelas */}
         <section id="section-students">
           <StudentListSection
             students={currentClass.students}
+            className={currentClass.summary.className || '-'}
+            teacherName={currentClass.summary.teacherName}
             onAddStudent={() => {
               setEditingStudent(null);
               setIsStudentModalOpen(true);
             }}
+            onAddBatchStudents={handleSaveBatchStudents}
             onEditStudent={(std) => {
               setEditingStudent(std);
               setIsStudentModalOpen(true);
             }}
             onDeleteStudent={handleDeleteStudent}
-            onPreviewDoc={(doc) => setPreviewDoc(doc)}
-          />
-        </section>
-
-        {/* Section 3: Upload Bukti Data Siswa Valid (Surat Pindah, KK, Akta) */}
-        <section id="section-documents">
-          <DocumentUploadSection
-            students={currentClass.students}
-            generalDocuments={currentClass.generalDocuments || []}
-            onAddDocument={handleAddDocument}
-            onDeleteDocument={handleDeleteDocument}
-            onUpdateDocStatus={handleUpdateDocStatus}
-            onPreviewDoc={(doc) => setPreviewDoc(doc)}
+            onSyncCountsToSummary={handleSyncCountsToSummary}
+            summaryMaleCount={Number(currentClass.summary.maleCount) || 0}
+            summaryFemaleCount={Number(currentClass.summary.femaleCount) || 0}
           />
         </section>
 
@@ -477,10 +477,12 @@ export default function App() {
           <StatementSignatureSection
             summary={currentClass.summary}
             totalStudents={totalStudents}
-            totalUploadedDocuments={totalUploadedDocuments}
             onUpdateSummary={handleUpdateSummary}
             onSaveRecord={handleSaveRecord}
             isSaving={isSaving}
+            duplicateInfo={duplicateSavedClass}
+            onLoadExistingClass={handleSelectClass}
+            isSavedInDatabase={Boolean(currentClass.summary.signedAt || currentClass.summary.signatureDataUrl)}
           />
         </section>
 
@@ -500,7 +502,7 @@ export default function App() {
             Aplikasi Rekapitulasi Data Wali Kelas • Dilengkapi Sistem Basis Data & Tanda Tangan Digital
           </p>
           <p className="text-slate-400">
-            Semua data tersimpan secara aman di penyimpanan browser lokal perangkat Anda (IndexedDB).
+            Semua data tersimpan secara aman di penyimpanan browser lokal perangkat Anda (IndexedDB) dan tersinkronisasi.
           </p>
         </div>
       </footer>
@@ -517,17 +519,6 @@ export default function App() {
         defaultClassName={currentClass.summary.className || 'Kelas Baru'}
       />
 
-      <DocumentPreviewModal
-        document={previewDoc}
-        onClose={() => setPreviewDoc(null)}
-        onUpdateStatus={(newStatus) => {
-          if (previewDoc) {
-            handleUpdateDocStatus(previewDoc.id, newStatus, previewDoc.studentId);
-            setPreviewDoc({ ...previewDoc, status: newStatus });
-          }
-        }}
-      />
-
       <BackupModal
         isOpen={isBackupModalOpen}
         onClose={() => setIsBackupModalOpen(false)}
@@ -538,6 +529,17 @@ export default function App() {
         onDeleteClass={handleDeleteClass}
         onRefreshData={loadDatabase}
         onResetDatabase={handleResetDatabase}
+      />
+
+      <DuplicateWarningModal
+        duplicateData={duplicateWarning}
+        onClose={() => setDuplicateWarning(null)}
+        onOpenExisting={(id) => {
+          handleSelectClass(id);
+          setDuplicateWarning(null);
+          const el = document.getElementById('section-summary');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }}
       />
 
     </div>

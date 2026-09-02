@@ -1,6 +1,7 @@
 import { FullClassData, ClassSummary, StudentEntry, DocumentProof, DatabaseBackup } from '../types';
 import { DEFAULT_SCHOOL_NAME } from '../constants';
 import { FirebaseDbService } from './firebaseDb';
+import { getClassPrimaryKey } from '../utils/classHelper';
 
 const DB_NAME = 'WaliKelasRekapDB';
 const DB_VERSION = 1;
@@ -83,10 +84,12 @@ export class DatabaseService {
   }
 
   public static async saveClass(data: FullClassData, syncToCloud: boolean = true): Promise<void> {
+    const primaryKey = data.summary.primaryKey || getClassPrimaryKey(data.summary.className);
     const updatedData: FullClassData = {
       ...data,
       summary: {
         ...data.summary,
+        primaryKey,
         updatedAt: new Date().toISOString()
       }
     };

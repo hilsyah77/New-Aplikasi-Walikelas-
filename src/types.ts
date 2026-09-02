@@ -41,6 +41,7 @@ export interface StudentEntry {
 
 export interface ClassSummary {
   id: string;
+  primaryKey?: string;
   schoolName: string;
   academicYear: string;
   semester: 'Ganjil' | 'Genap';

@@ -3,7 +3,6 @@ import {
   GraduationCap, 
   Database, 
   BookOpen, 
-  ShieldCheck, 
   CheckCircle2,
   FolderSync,
   Cloud
@@ -86,7 +85,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               >
                 {allClasses.map((cls) => (
                   <option key={cls.summary.id} value={cls.summary.id}>
-                    {cls.summary.className || 'Kelas'} ({cls.summary.academicYear})
+                    Kelas {cls.summary.className || '-'} ({cls.summary.academicYear}){cls.summary.teacherName ? ` - ${cls.summary.teacherName}` : ''}
                   </option>
                 ))}
               </select>

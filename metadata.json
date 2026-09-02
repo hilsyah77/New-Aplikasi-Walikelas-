@@ -1,6 +1,6 @@
 {
   "name": "New Aplikasi Rekapitulasi Data Wali Kelas",
-  "description": "Aplikasi input data wali kelas dengan penghitungan otomatis siswa laki-laki dan perempuan, pendataan siswa baru dan pindahan, upload bukti data valid, tanda tangan digital, serta ekspor PDF dan Excel.",
+  "description": "Aplikasi input data wali kelas dengan penghitungan otomatis siswa laki-laki dan perempuan, pendataan siswa baru dan pindahan, tanda tangan digital, serta ekspor PDF dan Excel.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

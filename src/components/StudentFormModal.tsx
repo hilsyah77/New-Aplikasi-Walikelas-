@@ -27,7 +27,7 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
   const [name, setName] = useState('');
   const [nis, setNis] = useState('');
   const [gender, setGender] = useState<Gender>('L');
-  const [status, setStatus] = useState<StudentStatus>('Siswa Baru');
+  const [status, setStatus] = useState<StudentStatus>('Siswa Reguler');
   const [targetClass, setTargetClass] = useState(defaultClassName);
   const [error, setError] = useState('');
 
@@ -36,13 +36,13 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
       setName(initialData.name || '');
       setNis(initialData.nis || '');
       setGender(initialData.gender || 'L');
-      setStatus(initialData.status || 'Siswa Baru');
+      setStatus(initialData.status || 'Siswa Reguler');
       setTargetClass(initialData.targetClass || defaultClassName);
     } else {
       setName('');
       setNis('');
       setGender('L');
-      setStatus('Siswa Baru');
+      setStatus('Siswa Reguler');
       setTargetClass(defaultClassName);
     }
     setError('');
@@ -95,10 +95,10 @@ export const StudentFormModal: React.FC<StudentFormModalProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-base">
-                {initialData ? 'Edit Data Siswa' : 'Input Data Siswa Baru, Siswa Pindahan (Mutasi) & Siswa Keluar (Drop Out)'}
+                {initialData ? 'Edit Data Siswa' : `Tambah Data Siswa (Kelas ${defaultClassName})`}
               </h3>
               <p className="text-xs text-slate-300">
-                Lengkapi nama, jenis kelamin, status (Baru / Mutasi / Drop Out), dan kelas siswa
+                Lengkapi nama, NIS, jenis kelamin, dan kategori status siswa
               </p>
             </div>
           </div>
